@@ -8,13 +8,29 @@
         font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
         font-size: 100%;
       }
+      #emails-list li > span {
+        padding: 0 10px;
+      }
+      #emails-list li {
+        padding-bottom: 5px
+      }
+      #reload i {
+        display: none;
+      }
+
+      #reload.reloading i {
+        display: initial;
+      }
     </style>
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    
     <script src="js/vendor.js"></script>
   </head>
   <body id="test-app">
-    <button id="add-email">Add Email</button>
-    <button id="reload">Refresh</button>
-    <ul id="emails-list" style="min-width: 700px; list-style: none;"> 
+    <button class="btn btn-success" id="add-email">Add Email</button>
+    <button class="btn btn-default" id="reload">Refresh <i class="fa fa-spin fa-spinner" ></i></button>
+    <ul id="emails-list" style="min-width: 700px; list-style: none; margin-left: 0; margin-right: 0"> 
       
     </ul>
     

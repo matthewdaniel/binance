@@ -6,19 +6,27 @@ import { iMail } from './interfaces';
 
 let count = 0;
 
-$(async _ => {
+let init = async() => {
   let emails = (await fetch('email-addresses')) as iMail[] || [];
+  
+  $('#emails-list').html('');
 
-  emails.forEach(email => {
-    const li = $(`<li style="display: flex; width: 100%; padding-right: 10" id="email-${email.address.split('@')[0]}" data-id="${email.address.split('@')[0]}">
-      <span>${email.address.split('@')[0]}</span>
-      ${!email.confirmed && email.confirmLink ? `<button class="confirm-btn">Confirm</botton>` : ''}
-      ${email.confirmed ? `<button class="login-btn">Login</botton>` : ''}
-      <button class="delete-email" >Forget</button>
-    </li>`)
+    emails.forEach(email => {
+      const li = $(`<li style="display: flex; width: 100%" id="email-${email.address.split('@')[0]}" data-id="${email.address.split('@')[0]}">
+        <span><i class="delete-email fa fa-trash" style="cursor: pointer; color: darkred" /></span>
+        <span>${email.address.split('@')[0]}</span>
+        ${!email.confirmed && email.confirmLink ? `<span><button class="btn btn-sm btn-outline-primary confirm-btn">Confirm</botton></span>` : ''}
+        ${email.confirmed ? `<span><button class="login-btn btn btn-sm btn-outline-primary">Login</botton></span>` : ''}
+        
+      </li>`)
+  
+      $('#emails-list').append(li)
+    })
+}
 
-    $('#emails-list').append(li)
-  })
+
+$(async _ => {
+  init();  
 
 
   $('.delete-email').click(({ target }) => {
@@ -47,7 +55,7 @@ $(async _ => {
             '#pwd': 'Password123',
           });
 
-          chrome.tabs.create({active: true, selected: true, url: 'https://www.binance.com/login.html?callback=/userCenter/depositWithdraw.html'});
+          chrome.tabs.create({active: true, selected: true, url: 'https://www.binance.com/userCenter/depositWithdraw.html'});
       })
   })
 
@@ -103,9 +111,12 @@ $(async _ => {
 
     
     $('#reload').click(async () => {
+      $('#reload').addClass('reloading');
+
       let emails = (await fetch('email-addresses')) as iMail[] || [];
 
-      for (var email of emails) {
+      let promises = emails.map(async email => {
+      
           if (email.confirmLink) return;
 
           await $.get(apemail('set_email_user', { email_user: email.address } )).promise();
@@ -123,7 +134,12 @@ $(async _ => {
 
             tagEmailLink(email.address, matches[1]);
           });
-      }
-      
+      })
+
+      await Promise.all(promises);
+
+      await init();
+
+      $('#reload').removeClass('reloading');
     })
 });

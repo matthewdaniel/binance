@@ -4,10 +4,12 @@ import * as $ from 'jquery';
 import { iMail } from './interfaces'
 
 let fillForms = (formFill) => {
-    Object.keys(formFill).map(k => {
-        console.log(k);
+    Object.keys(formFill || {}).map(k => {
+
         if (k.indexOf('#') !== -1) {
             var el = (document.getElementById(k.split('#')[1]) as any);
+
+            if (!el) return;
 
             if (formFill[k] == 'checked') {
                 el.checked = true;
@@ -18,12 +20,19 @@ let fillForms = (formFill) => {
         } else if (k.indexOf('.') != -1) {
 
         } else {
-            (document.getElementById(k) as any).value = formFill[k]
+            var el = (document.getElementById(k) as any);
+            if (!el) return;
+            el.value = formFill[k];
         }        
     });
-
-
 }
+
+let showDeposit = () => setTimeout(() => {
+    var button = document.getElementsByClassName('btn-deposit')[0];
+    var event = new MouseEvent('click', {bubbles: true});
+    button.dispatchEvent(event);
+}, 1500);
+
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if (changeInfo.status != 'complete') return;
@@ -31,8 +40,9 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     const formFill = await fetch('form-fill', {});
 
     chrome.tabs.executeScript({
-        code: `(${fillForms.toString()})(${JSON.stringify(formFill)})`
+        code: `(${fillForms.toString()})(${JSON.stringify(formFill)}); (${showDeposit.toString()})()`
     })
+
 
   })
 
