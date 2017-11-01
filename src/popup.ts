@@ -47,7 +47,7 @@ $(async _ => {
             '#pwd': 'Password123',
           });
 
-          chrome.tabs.create({active: true, selected: true, url: 'https://www.binance.com/login.html'});
+          chrome.tabs.create({active: true, selected: true, url: 'https://www.binance.com/login.html?callback=/userCenter/depositWithdraw.html'});
       })
   })
 
@@ -80,7 +80,7 @@ $(async _ => {
   //  addEmail({address: eRes.email_addr})
       
     
-  let pat = new RegExp('a href=\"(.+?)\"', 'g')
+  let pat = new RegExp('a href=\"(.+?)\"')
   
     $(document).on('click', '.confirm-btn', async ({ target }) => {
       let account = $(target).closest('li').data('id');
@@ -104,11 +104,11 @@ $(async _ => {
     
     $('#reload').click(async () => {
       let emails = (await fetch('email-addresses')) as iMail[] || [];
-      
-      for (var email of emails) {
-          // if (email.confirmLink) return;
 
-          await $.get(apemail('set_email_user', { seq: 1, email_user: email.address.split('@')[0] } )).promise();
+      for (var email of emails) {
+          if (email.confirmLink) return;
+
+          await $.get(apemail('set_email_user', { email_user: email.address } )).promise();
               
           let res = await $.get(apemail('get_email_list', {offset: 0}), {dataType: "json"})
   
@@ -120,8 +120,7 @@ $(async _ => {
             let matches = mail.mail_body.match(pat);;
 
             if (matches.length < 2) return;
-    
-            await $.get(matches[1]).promise()
+
             tagEmailLink(email.address, matches[1]);
           });
       }
