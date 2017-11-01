@@ -80,9 +80,9 @@ $(async _ => {
   //  addEmail({address: eRes.email_addr})
       
     
-  let pat = new RegExp('a href=\"(.+?)\"')
+  let pat = new RegExp('a href=\"(.+?)\"', 'g')
   
-    $(document).on('click', '#confirm-btn', async ({ target }) => {
+    $(document).on('click', '.confirm-btn', async ({ target }) => {
       let account = $(target).closest('li').data('id');
 
       let email = await getEmail(account);
@@ -104,19 +104,21 @@ $(async _ => {
     
     $('#reload').click(async () => {
       let emails = (await fetch('email-addresses')) as iMail[] || [];
-      // alert(JSON.stringify(emails));s
+      
       for (var email of emails) {
+          // if (email.confirmLink) return;
+
           await $.get(apemail('set_email_user', { seq: 1, email_user: email.address.split('@')[0] } )).promise();
               
           let res = await $.get(apemail('get_email_list', {offset: 0}), {dataType: "json"})
   
           res.list.map(async x => {
             let mail = await $.get(apemail('fetch_email', {email_id: x.mail_id})).promise();
-    
-            if (!mail.mail_body.toLowerCase().indexOf('binance')) return; // not the mail we're looking for
+
+            if (mail.mail_body.toLowerCase().indexOf('binance') == -1) return; // not the mail we're looking for
     
             let matches = mail.mail_body.match(pat);;
-    alert(JSON.stringify(matches));
+
             if (matches.length < 2) return;
     
             await $.get(matches[1]).promise()
