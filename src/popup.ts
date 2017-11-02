@@ -7,6 +7,10 @@ import { iMail } from './interfaces';
 let count = 0;
 
 let init = async() => {
+  count++;
+
+  $('#counter').html(count.toString());
+
   let emails = (await fetch('email-addresses')) as iMail[] || [];
   
   $('#emails-list').html('');
@@ -29,8 +33,7 @@ $(async _ => {
   init();  
 
 
-  $('.delete-email').click(({ target }) => {
-    
+  $(document).on('click', '.delete-email', ({ target }) => {
       const account = $(target).closest('li').data('id');
 
       deleteEmail(account);

@@ -84,6 +84,8 @@ const uuid = __webpack_require__(3);
 const helpers_1 = __webpack_require__(1);
 let count = 0;
 let init = () => __awaiter(this, void 0, void 0, function* () {
+    count++;
+    $('#counter').html(count.toString());
     let emails = (yield helpers_1.fetch('email-addresses')) || [];
     $('#emails-list').html('');
     emails.forEach(email => {
@@ -99,7 +101,7 @@ let init = () => __awaiter(this, void 0, void 0, function* () {
 });
 $((_) => __awaiter(this, void 0, void 0, function* () {
     init();
-    $('.delete-email').click(({ target }) => {
+    $(document).on('click', '.delete-email', ({ target }) => {
         const account = $(target).closest('li').data('id');
         helpers_1.deleteEmail(account);
         $(`#email-${account}`).remove();
