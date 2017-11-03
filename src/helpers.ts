@@ -25,16 +25,15 @@ export const flagConfirmed = async (address) => {
 export const tagEmailLink = async (address, link) => {
     let emails = await listEmails();
 
-    emails = emails.map(e => {
-        if (address != e.address) return e;
-
-        return {
-            address: e.address,
+    let newemails = [
+        ...emails.filter(e => e.address != address),
+        {
+            address: address,
             confirmLink: link
         }
-    })
+    ]
 
-    await persist('email-addresses', emails);
+    await persist('email-addresses', newemails);
 }
 
 export const addEmail = async (email: iMail) => {
@@ -46,7 +45,11 @@ export const addEmail = async (email: iMail) => {
 }
 
 export const listEmails = async (): Promise<iMail[]> => {
-    return (await fetch('email-addresses', [])) as iMail[];
+    return ((await fetch('email-addresses', [])) as iMail[]).filter(x => !!x).sort((a,b) => {
+        if (a < b) return -1;
+        if (b > a) return 1;
+        return 0;
+    });
 }
 
 export const getEmail = async (account) => {

@@ -1,44 +1,39 @@
 import * as moment from 'moment';
 import * as $ from 'jquery';
 import * as uuid from 'uuid/v1';
-import { fetch, persist, apemail, addEmail, deleteEmail, tagEmailLink, getEmail, flagConfirmed } from './helpers';
+import { fetch, listEmails, persist, apemail, addEmail, deleteEmail, tagEmailLink, getEmail, flagConfirmed } from './helpers';
 import { iMail } from './interfaces';
 
-let count = 0;
 
-let init = async() => {
-  count++;
+let init = async () => {
+  let emails = (await listEmails());
 
-  $('#counter').html(count.toString());
-
-  let emails = (await fetch('email-addresses')) as iMail[] || [];
-  
   $('#emails-list').html('');
 
-    emails.forEach(email => {
-      const li = $(`<li style="display: flex; width: 100%" id="email-${email.address.split('@')[0]}" data-id="${email.address.split('@')[0]}">
+  emails.forEach(email => {
+    const li = $(`<li style="display: flex; width: 100%" id="email-${email.address.split('@')[0]}" data-id="${email.address.split('@')[0]}">
         <span><i class="delete-email fa fa-trash" style="cursor: pointer; color: darkred" /></span>
         <span>${email.address.split('@')[0]}</span>
         ${!email.confirmed && email.confirmLink ? `<span><button class="btn btn-sm btn-outline-primary confirm-btn">Confirm</botton></span>` : ''}
         ${email.confirmed ? `<span><button class="login-btn btn btn-sm btn-outline-primary">Login</botton></span>` : ''}
         
       </li>`)
-  
-      $('#emails-list').append(li)
-    })
+
+    $('#emails-list').append(li)
+  })
 }
 
 
 $(async _ => {
-  init();  
+  init();
 
 
   $(document).on('click', '.delete-email', ({ target }) => {
-      const account = $(target).closest('li').data('id');
+    const account = $(target).closest('li').data('id');
 
-      deleteEmail(account);
+    deleteEmail(account);
 
-      $(`#email-${account}`).remove();
+    $(`#email-${account}`).remove();
 
   })
   // chrome.tabs.query(queryInfo, tabs => {
@@ -49,100 +44,116 @@ $(async _ => {
   $(document).on('click', '.login-btn', async ({ target }) => {
     let account = $(target).closest('li').data('id');
 
-    chrome.cookies.getAll({domain: '.binance.com'}, async cs => {
-          var clearPs = cs.map(c => new Promise(resolve => chrome.cookies.remove({"url": 'https://www.binance.com', "name": c.name}, resolve)));
-          await Promise.all(clearPs);
+    chrome.cookies.getAll({ domain: '.binance.com' }, async cs => {
+      var clearPs = cs.map(c => new Promise(resolve => chrome.cookies.remove({ "url": 'https://www.binance.com', "name": c.name }, resolve)));
+      await Promise.all(clearPs);
 
-          persist('form-fill', {
-            '#email': account+'@guerrillamail.com',
-            '#pwd': 'Password123',
-          });
+      persist('form-fill', {
+        '#email': account + '@guerrillamail.com',
+        '#pwd': 'Password123',
+      });
 
-          chrome.tabs.create({active: true, selected: true, url: 'https://www.binance.com/userCenter/depositWithdraw.html'});
-      })
+      chrome.tabs.create({ active: true, selected: true, url: 'https://www.binance.com/userCenter/depositWithdraw.html' });
+    })
   })
 
-    $('#add-email').click(async () => {
-      // const ePromise = await $.get(apemail('get_email_address')).promise();
-      // $.get(apemail('forget_me'));
 
-      const email = 'abc'+uuid().toString().substring(0, 20)+'@guerrillamail.com';
+  $('#add-email').click(async () => {
+    // const ePromise = await $.get(apemail('get_email_address')).promise();
+    // $.get(apemail('forget_me'));
 
-      // Log out existing user
-      chrome.cookies.getAll({domain: '.binance.com'}, async cs => {
-          var clearPs = cs.map(c => new Promise(resolve => chrome.cookies.remove({"url": 'https://www.binance.com', "name": c.name}, resolve)));
-          await Promise.all(clearPs);
-          
+    let emailCount = (await listEmails()).length + 1;
 
-          addEmail({address: email})
+    const email = emailCount.toString() + 'abc' + uuid().toString().substring(0, 20) + '@guerrillamail.com';
 
-          persist('form-fill', {
-            '#email': email,
-            '#regiterPassword': 'Password123',
-            '#regiterRepeatPassword': 'Password123',
-            '#agreement': 'checked',
-          });
+    // Log out existing user
+    chrome.cookies.getAll({ domain: '.binance.com' }, async cs => {
+      var clearPs = cs.map(c => new Promise(resolve => chrome.cookies.remove({ "url": 'https://www.binance.com', "name": c.name }, resolve)));
+      await Promise.all(clearPs);
 
-          chrome.tabs.create({active: true, selected: true, url: 'https://www.binance.com/register.html'});
-      })
-   })
+
+      addEmail({ address: email })
+
+      persist('form-fill', {
+        '#email': email,
+        '#regiterPassword': 'Password123',
+        '#regiterRepeatPassword': 'Password123',
+        '#agreement': 'checked',
+      });
+
+      chrome.tabs.create({ active: true, selected: true, url: 'https://www.binance.com/register.html' });
+    })
+  })
   //  let eRes = await ePromise;
 
   //  addEmail({address: eRes.email_addr})
-      
-    
+
+
   let pat = new RegExp('a href=\"(.+?)\"')
-  
-    $(document).on('click', '.confirm-btn', async ({ target }) => {
-      let account = $(target).closest('li').data('id');
 
-      let email = await getEmail(account);
+  $(document).on('click', '.confirm-btn', async ({ target }) => {
+    let account = $(target).closest('li').data('id');
 
-      if (!email.confirmLink) return;
+    let email = await getEmail(account);
 
-      chrome.cookies.getAll({domain: '.binance.com'}, async cs => {
-        var clearPs = cs.map(c => new Promise(resolve => chrome.cookies.remove({"url": 'https://www.binance.com', "name": c.name}, resolve)));
-        await Promise.all(clearPs);
+    if (!email.confirmLink) return;
 
-        flagConfirmed(email.address);
-        chrome.tabs.create({active: true, selected: true, url: email.confirmLink});
+    chrome.cookies.getAll({ domain: '.binance.com' }, async cs => {
+      var clearPs = cs.map(c => new Promise(resolve => chrome.cookies.remove({ "url": 'https://www.binance.com', "name": c.name }, resolve)));
+      await Promise.all(clearPs);
+
+      flagConfirmed(email.address);
+      chrome.tabs.create({ active: true, selected: true, url: email.confirmLink });
 
     })
-      
 
-    });
 
-    
-    $('#reload').click(async () => {
-      $('#reload').addClass('reloading');
+  });
 
-      let emails = (await fetch('email-addresses')) as iMail[] || [];
+  $('#emails-info').click(async () => {
+    let emails = (await fetch('email-addresses')) as iMail[] || [];
+    alert(JSON.stringify(emails, undefined, 4));
+  })
 
-      let promises = emails.map(async email => {
-      
-          if (email.confirmLink) return;
+  $('#reload').click(async () => {
+    $('#reload').addClass('reloading');
 
-          await $.get(apemail('set_email_user', { email_user: email.address } )).promise();
-              
-          let res = await $.get(apemail('get_email_list', {offset: 0}), {dataType: "json"})
-  
-          res.list.map(async x => {
-            let mail = await $.get(apemail('fetch_email', {email_id: x.mail_id})).promise();
+    let emails = await listEmails();
 
-            if (mail.mail_body.toLowerCase().indexOf('binance') == -1) return; // not the mail we're looking for
-    
-            let matches = mail.mail_body.match(pat);;
+    let fetching = false;
 
-            if (matches.length < 2) return;
+    var process = (email) => !email || $.get(apemail('set_email_user', { email_user: email.address }))
+      .then(x => $.get(apemail('get_email_list', { offset: 0 }), { dataType: "json" }))
+      .then(async res => await Promise.all(res.list.map(x => $.get(apemail('fetch_email', { email_id: x.mail_id })))))
+      .then(emails => {
+        if (!emails || !emails.length || emails[0] == false) return;
 
-            tagEmailLink(email.address, matches[1]);
-          });
+        const mail = emails.find((m: any) => m.mail_body.toLowerCase().indexOf('binance') != -1);
+
+        let matches = (mail as any).mail_body.match(pat);;
+
+        if (matches.length > 1)
+          tagEmailLink(email.address, matches[1]);
       })
+      .always(x => fetching = false);
 
-      await Promise.all(promises);
 
-      await init();
+    var interval = setInterval(_ => {
 
-      $('#reload').removeClass('reloading');
-    })
+      if (!emails.length) {
+        clearInterval(interval);
+        init();
+        $('#reload').removeClass('reloading');
+      }
+
+      if (fetching) return;
+
+      process(emails.pop());
+    }, 100);
+
+
+
+
+
+  })
 });

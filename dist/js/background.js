@@ -33,15 +33,14 @@ exports.flagConfirmed = (address) => __awaiter(this, void 0, void 0, function* (
 });
 exports.tagEmailLink = (address, link) => __awaiter(this, void 0, void 0, function* () {
     let emails = yield exports.listEmails();
-    emails = emails.map(e => {
-        if (address != e.address)
-            return e;
-        return {
-            address: e.address,
+    let newemails = [
+        ...emails.filter(e => e.address != address),
+        {
+            address: address,
             confirmLink: link
-        };
-    });
-    yield exports.persist('email-addresses', emails);
+        }
+    ];
+    yield exports.persist('email-addresses', newemails);
 });
 exports.addEmail = (email) => __awaiter(this, void 0, void 0, function* () {
     let emails = (yield exports.listEmails()) || [];
@@ -49,7 +48,13 @@ exports.addEmail = (email) => __awaiter(this, void 0, void 0, function* () {
     yield exports.persist('email-addresses', emails);
 });
 exports.listEmails = () => __awaiter(this, void 0, void 0, function* () {
-    return (yield exports.fetch('email-addresses', []));
+    return (yield exports.fetch('email-addresses', [])).filter(x => !!x).sort((a, b) => {
+        if (a < b)
+            return -1;
+        if (b > a)
+            return 1;
+        return 0;
+    });
 });
 exports.getEmail = (account) => __awaiter(this, void 0, void 0, function* () {
     let emails = yield exports.listEmails();

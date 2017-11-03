@@ -33,15 +33,14 @@ exports.flagConfirmed = (address) => __awaiter(this, void 0, void 0, function* (
 });
 exports.tagEmailLink = (address, link) => __awaiter(this, void 0, void 0, function* () {
     let emails = yield exports.listEmails();
-    emails = emails.map(e => {
-        if (address != e.address)
-            return e;
-        return {
-            address: e.address,
+    let newemails = [
+        ...emails.filter(e => e.address != address),
+        {
+            address: address,
             confirmLink: link
-        };
-    });
-    yield exports.persist('email-addresses', emails);
+        }
+    ];
+    yield exports.persist('email-addresses', newemails);
 });
 exports.addEmail = (email) => __awaiter(this, void 0, void 0, function* () {
     let emails = (yield exports.listEmails()) || [];
@@ -49,7 +48,13 @@ exports.addEmail = (email) => __awaiter(this, void 0, void 0, function* () {
     yield exports.persist('email-addresses', emails);
 });
 exports.listEmails = () => __awaiter(this, void 0, void 0, function* () {
-    return (yield exports.fetch('email-addresses', []));
+    return (yield exports.fetch('email-addresses', [])).filter(x => !!x).sort((a, b) => {
+        if (a < b)
+            return -1;
+        if (b > a)
+            return 1;
+        return 0;
+    });
 });
 exports.getEmail = (account) => __awaiter(this, void 0, void 0, function* () {
     let emails = yield exports.listEmails();
@@ -82,11 +87,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const $ = __webpack_require__(0);
 const uuid = __webpack_require__(3);
 const helpers_1 = __webpack_require__(1);
-let count = 0;
 let init = () => __awaiter(this, void 0, void 0, function* () {
-    count++;
-    $('#counter').html(count.toString());
-    let emails = (yield helpers_1.fetch('email-addresses')) || [];
+    let emails = (yield helpers_1.listEmails());
     $('#emails-list').html('');
     emails.forEach(email => {
         const li = $(`<li style="display: flex; width: 100%" id="email-${email.address.split('@')[0]}" data-id="${email.address.split('@')[0]}">
@@ -125,7 +127,8 @@ $((_) => __awaiter(this, void 0, void 0, function* () {
     $('#add-email').click(() => __awaiter(this, void 0, void 0, function* () {
         // const ePromise = await $.get(apemail('get_email_address')).promise();
         // $.get(apemail('forget_me'));
-        const email = 'abc' + uuid().toString().substring(0, 20) + '@guerrillamail.com';
+        let emailCount = (yield helpers_1.listEmails()).length + 1;
+        const email = emailCount.toString() + 'abc' + uuid().toString().substring(0, 20) + '@guerrillamail.com';
         // Log out existing user
         chrome.cookies.getAll({ domain: '.binance.com' }, (cs) => __awaiter(this, void 0, void 0, function* () {
             var clearPs = cs.map(c => new Promise(resolve => chrome.cookies.remove({ "url": 'https://www.binance.com', "name": c.name }, resolve)));
@@ -155,28 +158,37 @@ $((_) => __awaiter(this, void 0, void 0, function* () {
             chrome.tabs.create({ active: true, selected: true, url: email.confirmLink });
         }));
     }));
+    $('#emails-info').click(() => __awaiter(this, void 0, void 0, function* () {
+        let emails = (yield helpers_1.fetch('email-addresses')) || [];
+        alert(JSON.stringify(emails, undefined, 4));
+    }));
     $('#reload').click(() => __awaiter(this, void 0, void 0, function* () {
         $('#reload').addClass('reloading');
-        let emails = (yield helpers_1.fetch('email-addresses')) || [];
-        let promises = emails.map((email) => __awaiter(this, void 0, void 0, function* () {
-            if (email.confirmLink)
+        let emails = yield helpers_1.listEmails();
+        let fetching = false;
+        var process = (email) => !email || $.get(helpers_1.apemail('set_email_user', { email_user: email.address }))
+            .then(x => $.get(helpers_1.apemail('get_email_list', { offset: 0 }), { dataType: "json" }))
+            .then((res) => __awaiter(this, void 0, void 0, function* () { return yield Promise.all(res.list.map(x => $.get(helpers_1.apemail('fetch_email', { email_id: x.mail_id })))); }))
+            .then(emails => {
+            if (!emails || !emails.length || emails[0] == false)
                 return;
-            yield $.get(helpers_1.apemail('set_email_user', { email_user: email.address })).promise();
-            let res = yield $.get(helpers_1.apemail('get_email_list', { offset: 0 }), { dataType: "json" });
-            res.list.map((x) => __awaiter(this, void 0, void 0, function* () {
-                let mail = yield $.get(helpers_1.apemail('fetch_email', { email_id: x.mail_id })).promise();
-                if (mail.mail_body.toLowerCase().indexOf('binance') == -1)
-                    return; // not the mail we're looking for
-                let matches = mail.mail_body.match(pat);
-                ;
-                if (matches.length < 2)
-                    return;
+            const mail = emails.find((m) => m.mail_body.toLowerCase().indexOf('binance') != -1);
+            let matches = mail.mail_body.match(pat);
+            ;
+            if (matches.length > 1)
                 helpers_1.tagEmailLink(email.address, matches[1]);
-            }));
-        }));
-        yield Promise.all(promises);
-        yield init();
-        $('#reload').removeClass('reloading');
+        })
+            .always(x => fetching = false);
+        var interval = setInterval(_ => {
+            if (!emails.length) {
+                clearInterval(interval);
+                init();
+                $('#reload').removeClass('reloading');
+            }
+            if (fetching)
+                return;
+            process(emails.pop());
+        }, 100);
     }));
 }));
 
