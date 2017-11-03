@@ -115,9 +115,10 @@ $(async _ => {
     alert(JSON.stringify(emails, undefined, 4));
   })
 
-  const reloadFn = async () => $('#reload').addClass('reloading');
+  const reloadFn = async () => {
+      $('#reload').addClass('reloading');
   
-      let emails = await listEmails();
+      let emails = (await listEmails()).filter(e => !e.confirmLink);
   
       let fetching = false;
   
@@ -127,7 +128,7 @@ $(async _ => {
         .then(emails => {
           if (!emails || !emails.length || emails[0] == false) return;
   
-          const mail = emails.find((m: any) => m.mail_body.toLowerCase().indexOf('binance') != -1);
+          const mail = emails.filter(m => !!m).find((m: any) => m.mail_body.toLowerCase().indexOf('binance') != -1);
   
           let matches = (mail as any).mail_body.match(pat);;
   
@@ -149,7 +150,7 @@ $(async _ => {
   
         process(emails.pop());
       }, 100);
-
-      reloadFn();
-  $('#reload').click(reloadFn);
+    }
+    reloadFn();
+    $('#reload').click(reloadFn);
 });
