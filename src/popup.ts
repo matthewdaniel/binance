@@ -115,45 +115,41 @@ $(async _ => {
     alert(JSON.stringify(emails, undefined, 4));
   })
 
-  $('#reload').click(async () => {
-    $('#reload').addClass('reloading');
+  const reloadFn = async () => $('#reload').addClass('reloading');
+  
+      let emails = await listEmails();
+  
+      let fetching = false;
+  
+      var process = (email) => !email || $.get(apemail('set_email_user', { email_user: email.address }))
+        .then(x => $.get(apemail('get_email_list', { offset: 0 }), { dataType: "json" }))
+        .then(async res => await Promise.all(res.list.map(x => $.get(apemail('fetch_email', { email_id: x.mail_id })))))
+        .then(emails => {
+          if (!emails || !emails.length || emails[0] == false) return;
+  
+          const mail = emails.find((m: any) => m.mail_body.toLowerCase().indexOf('binance') != -1);
+  
+          let matches = (mail as any).mail_body.match(pat);;
+  
+          if (matches.length > 1)
+            tagEmailLink(email.address, matches[1]);
+        })
+        .always(x => fetching = false);
+  
+  
+      var interval = setInterval(_ => {
+  
+        if (!emails.length) {
+          clearInterval(interval);
+          init();
+          $('#reload').removeClass('reloading');
+        }
+  
+        if (fetching) return;
+  
+        process(emails.pop());
+      }, 100);
 
-    let emails = await listEmails();
-
-    let fetching = false;
-
-    var process = (email) => !email || $.get(apemail('set_email_user', { email_user: email.address }))
-      .then(x => $.get(apemail('get_email_list', { offset: 0 }), { dataType: "json" }))
-      .then(async res => await Promise.all(res.list.map(x => $.get(apemail('fetch_email', { email_id: x.mail_id })))))
-      .then(emails => {
-        if (!emails || !emails.length || emails[0] == false) return;
-
-        const mail = emails.find((m: any) => m.mail_body.toLowerCase().indexOf('binance') != -1);
-
-        let matches = (mail as any).mail_body.match(pat);;
-
-        if (matches.length > 1)
-          tagEmailLink(email.address, matches[1]);
-      })
-      .always(x => fetching = false);
-
-
-    var interval = setInterval(_ => {
-
-      if (!emails.length) {
-        clearInterval(interval);
-        init();
-        $('#reload').removeClass('reloading');
-      }
-
-      if (fetching) return;
-
-      process(emails.pop());
-    }, 100);
-
-
-
-
-
-  })
+      reloadFn();
+  $('#reload').click(reloadFn);
 });

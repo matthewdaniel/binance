@@ -162,34 +162,34 @@ $((_) => __awaiter(this, void 0, void 0, function* () {
         let emails = (yield helpers_1.fetch('email-addresses')) || [];
         alert(JSON.stringify(emails, undefined, 4));
     }));
-    $('#reload').click(() => __awaiter(this, void 0, void 0, function* () {
-        $('#reload').addClass('reloading');
-        let emails = yield helpers_1.listEmails();
-        let fetching = false;
-        var process = (email) => !email || $.get(helpers_1.apemail('set_email_user', { email_user: email.address }))
-            .then(x => $.get(helpers_1.apemail('get_email_list', { offset: 0 }), { dataType: "json" }))
-            .then((res) => __awaiter(this, void 0, void 0, function* () { return yield Promise.all(res.list.map(x => $.get(helpers_1.apemail('fetch_email', { email_id: x.mail_id })))); }))
-            .then(emails => {
-            if (!emails || !emails.length || emails[0] == false)
-                return;
-            const mail = emails.find((m) => m.mail_body.toLowerCase().indexOf('binance') != -1);
-            let matches = mail.mail_body.match(pat);
-            ;
-            if (matches.length > 1)
-                helpers_1.tagEmailLink(email.address, matches[1]);
-        })
-            .always(x => fetching = false);
-        var interval = setInterval(_ => {
-            if (!emails.length) {
-                clearInterval(interval);
-                init();
-                $('#reload').removeClass('reloading');
-            }
-            if (fetching)
-                return;
-            process(emails.pop());
-        }, 100);
-    }));
+    const reloadFn = () => __awaiter(this, void 0, void 0, function* () { return $('#reload').addClass('reloading'); });
+    let emails = yield helpers_1.listEmails();
+    let fetching = false;
+    var process = (email) => !email || $.get(helpers_1.apemail('set_email_user', { email_user: email.address }))
+        .then(x => $.get(helpers_1.apemail('get_email_list', { offset: 0 }), { dataType: "json" }))
+        .then((res) => __awaiter(this, void 0, void 0, function* () { return yield Promise.all(res.list.map(x => $.get(helpers_1.apemail('fetch_email', { email_id: x.mail_id })))); }))
+        .then(emails => {
+        if (!emails || !emails.length || emails[0] == false)
+            return;
+        const mail = emails.find((m) => m.mail_body.toLowerCase().indexOf('binance') != -1);
+        let matches = mail.mail_body.match(pat);
+        ;
+        if (matches.length > 1)
+            helpers_1.tagEmailLink(email.address, matches[1]);
+    })
+        .always(x => fetching = false);
+    var interval = setInterval(_ => {
+        if (!emails.length) {
+            clearInterval(interval);
+            init();
+            $('#reload').removeClass('reloading');
+        }
+        if (fetching)
+            return;
+        process(emails.pop());
+    }, 100);
+    reloadFn();
+    $('#reload').click(reloadFn);
 }));
 
 
