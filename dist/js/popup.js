@@ -162,9 +162,9 @@ $((_) => __awaiter(this, void 0, void 0, function* () {
         let emails = (yield helpers_1.fetch('email-addresses')) || [];
         alert(JSON.stringify(emails, undefined, 4));
     }));
-    const reloadFn = () => __awaiter(this, void 0, void 0, function* () {
+    const reloadFn = (force = false) => __awaiter(this, void 0, void 0, function* () {
         $('#reload').addClass('reloading');
-        let emails = (yield helpers_1.listEmails()).filter(e => !e.confirmLink);
+        let emails = (yield helpers_1.listEmails()).filter(e => force || !e.confirmLink);
         let fetching = false;
         var process = (email) => !email || $.get(helpers_1.apemail('set_email_user', { email_user: email.address }))
             .then(x => $.get(helpers_1.apemail('get_email_list', { offset: 0 }), { dataType: "json" }))
@@ -191,7 +191,8 @@ $((_) => __awaiter(this, void 0, void 0, function* () {
         }, 100);
     });
     reloadFn();
-    $('#reload').click(reloadFn);
+    $('#reload').click(x => reloadFn());
+    $('#force-refresh').click(x => reloadFn(true));
 }));
 
 

@@ -115,10 +115,10 @@ $(async _ => {
     alert(JSON.stringify(emails, undefined, 4));
   })
 
-  const reloadFn = async () => {
+  const reloadFn = async (force = false) => {
       $('#reload').addClass('reloading');
   
-      let emails = (await listEmails()).filter(e => !e.confirmLink);
+      let emails = (await listEmails()).filter(e => force || !e.confirmLink);
   
       let fetching = false;
   
@@ -152,5 +152,6 @@ $(async _ => {
       }, 100);
     }
     reloadFn();
-    $('#reload').click(reloadFn);
+    $('#reload').click(x => reloadFn());
+    $('#force-refresh').click(x => reloadFn(true));
 });
